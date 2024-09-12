@@ -4,7 +4,6 @@ import { useState } from 'react'
 import InputScreen from '@/components/InputScreen'
 import OutputScreen from '@/components/OutputScreen'
 import AdvancedMode from '@/components/AdvancedMode'
-import Link from 'next/link'
 
 type ModelInteraction = {
   timestamp: string;

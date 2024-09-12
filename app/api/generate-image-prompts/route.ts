@@ -6,7 +6,7 @@ const anthropic = new Anthropic({
 });
 
 export async function POST(request: Request) {
-  const { topic, audience, country, isEvent, eventTiming, category } = await request.json()
+  const { topic, audience, country } = await request.json()
 
   try {
     console.log('Calling Anthropic Claude API for image prompt generation...')

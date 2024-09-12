@@ -46,7 +46,7 @@ export default function AdvancedMode({ modelInteractions, isOpen }: AdvancedMode
       {(!modelInteractions || modelInteractions.length === 0) ? (
         <div className="h-full flex items-center justify-center">
           <p className="text-gray-600 text-sm text-center px-4">
-            🧠 Welcome to Albert's Brain! 🚀<br/>
+            🧠 Welcome to Albert&apos;s Brain! 🚀<br/>
             This is where the magic happens.<br/>
             Start a topic analysis to see the gears turning!
           </p>
