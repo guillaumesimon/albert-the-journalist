@@ -19,13 +19,17 @@ type EventInfo = {
   eventName?: string;
   eventDate?: string;
   category: string;
+  summary?: string;
   questions?: string[];
+  imagePrompts?: string[];
+  generatedImages?: string[];
 }
 
 export default function Home() {
   const [showAdvancedMode, setShowAdvancedMode] = useState(false)
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null)
   const [modelInteractions, setModelInteractions] = useState<ModelInteraction[]>([])
+  const [loading, setLoading] = useState(false)
 
   const toggleAdvancedMode = () => {
     setShowAdvancedMode(!showAdvancedMode)
@@ -40,6 +44,71 @@ export default function Home() {
     if (info === null) {
       // Clear model interactions when starting a new analysis
       setModelInteractions([])
+    }
+  }
+
+  const handleSubmit = async (data: any) => {
+    setLoading(true)
+    // Initialize eventInfo with basic data to trigger OutputScreen rendering
+    setEventInfo({
+      isEvent: false,
+      category: '',
+      eventName: data.topic,
+      questions: [],
+      imagePrompts: [],
+      generatedImages: [],
+    })
+
+    try {
+      // Analyze topic
+      console.log('Analyzing topic...')
+      const analyzeResponse = await fetch('/api/analyze-topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      const analyzeData = await analyzeResponse.json()
+      console.log('Topic analysis complete:', analyzeData)
+      setEventInfo(prevInfo => prevInfo ? { ...prevInfo, ...JSON.parse(analyzeData.claudeOutput) } : null)
+
+      // Generate questions
+      console.log('Generating questions...')
+      const questionsResponse = await fetch('/api/generate-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, ...JSON.parse(analyzeData.claudeOutput) }),
+      })
+      const questionsData = await questionsResponse.json()
+      console.log('Questions generated:', questionsData)
+      setEventInfo(prevInfo => prevInfo ? { ...prevInfo, questions: questionsData.questions } : null)
+
+      // Generate image prompts
+      console.log('Generating image prompts...')
+      const imagePromptsResponse = await fetch('/api/generate-image-prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: data.topic, questions: questionsData.questions }),
+      })
+      const imagePromptsData = await imagePromptsResponse.json()
+      console.log('Image prompts generated:', imagePromptsData)
+      setEventInfo(prevInfo => prevInfo ? { ...prevInfo, imagePrompts: imagePromptsData.imagePrompts } : null)
+
+      // Generate images
+      console.log('Generating images...')
+      const imagesResponse = await fetch('/api/generate-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imagePrompts: imagePromptsData.imagePrompts }),
+      })
+      const imagesData = await imagesResponse.json()
+      console.log('Images generated:', imagesData)
+      setEventInfo(prevInfo => prevInfo ? { ...prevInfo, generatedImages: imagesData.generatedImages } : null)
+
+    } catch (error) {
+      console.error('Error processing request:', error)
+      setEventInfo(null) // Reset eventInfo on error
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -58,9 +127,15 @@ export default function Home() {
           </div>
           <div className="w-full">
             {!eventInfo ? (
-              <InputScreen setEventInfo={handleSetEventInfo} onModelInteraction={handleModelInteraction} />
+              <InputScreen
+                onSubmit={handleSubmit}
+                loading={loading}
+              />
             ) : (
-              <OutputScreen eventInfo={eventInfo} setEventInfo={handleSetEventInfo} />
+              <OutputScreen
+                eventInfo={eventInfo}
+                setEventInfo={handleSetEventInfo}
+              />
             )}
           </div>
         </div>

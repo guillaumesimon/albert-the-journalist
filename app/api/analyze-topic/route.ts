@@ -52,17 +52,29 @@ export async function POST(request: Request) {
           Here's additional information about the topic:
           ${perplexityInfo}
 
-          Based on this information, determine if the topic is related to an event, and if so, its timing and date. Also, categorize the topic into one of the following categories: Science, Sports, Politics, Technology, Entertainment, Business, Health, Education, or Other.
+          Based on this information:
+          1. Determine if the topic is related to an event, and if so, its timing and date.
+          2. Categorize the topic into one of the following categories: Science, Sports, Politics, Technology, Entertainment, Business, Health, Education, or Other.
+          3. Generate a concise summary of the topic in less than 240 characters.
+
+          When determining the event timing:
+          - If the event's start date is in the future compared to today's date (${currentDate}), set eventTiming to "Future".
+          - If the event's end date is in the past compared to today's date, set eventTiming to "Past".
+          - If today's date falls between the event's start and end dates (inclusive), set eventTiming to "Ongoing".
+          - If the event is not date-specific or the timing cannot be determined, set eventTiming to null.
+
+          For the eventDate, use the start date of the event if available. If not, use the most relevant date mentioned.
 
           Provide your response in the following JSON format:
           {
             "isEvent": boolean,
             "eventTiming": "Past" | "Ongoing" | "Future" | null,
             "eventDate": "YYYY-MM-DD" or null if not applicable,
-            "category": "Science" | "Sports" | "Politics" | "Technology" | "Entertainment" | "Business" | "Health" | "Education" | "Other"
+            "category": "Science" | "Sports" | "Politics" | "Technology" | "Entertainment" | "Business" | "Health" | "Education" | "Other",
+            "summary": "Concise summary of the topic in less than 240 characters"
           }
 
-          Ensure that the JSON is valid and properly formatted.`
+          Ensure that the JSON is valid and properly formatted. Double-check your date comparisons before finalizing the eventTiming.`
         }
       ]
     })
@@ -81,15 +93,38 @@ export async function POST(request: Request) {
 
     const jsonOutput = jsonMatch[0]
 
-    // Validate JSON
+    // Validate and correct JSON output
     try {
-      JSON.parse(jsonOutput)
+      const parsedOutput = JSON.parse(jsonOutput)
+      
+      // Validate eventTiming
+      if (parsedOutput.isEvent && parsedOutput.eventDate) {
+        const eventDate = new Date(parsedOutput.eventDate)
+        const today = new Date(currentDate)
+        
+        if (eventDate > today) {
+          parsedOutput.eventTiming = "Future"
+        } else if (eventDate < today) {
+          parsedOutput.eventTiming = "Past"
+        } else {
+          parsedOutput.eventTiming = "Ongoing"
+        }
+      }
+
+      // Validate summary length
+      if (parsedOutput.summary && parsedOutput.summary.length > 240) {
+        parsedOutput.summary = parsedOutput.summary.substring(0, 237) + '...'
+      }
+
+      // Re-stringify the corrected output
+      const correctedOutput = JSON.stringify(parsedOutput)
+      
+      console.log('Validated and corrected Claude API response:', correctedOutput)
+      return NextResponse.json({ perplexityInfo, claudeOutput: correctedOutput })
     } catch (error) {
       console.error('Invalid JSON from Claude API:', error)
       return NextResponse.json({ error: 'Invalid JSON response from Claude API' }, { status: 500 })
     }
-
-    return NextResponse.json({ perplexityInfo, claudeOutput: jsonOutput })
   } catch (error) {
     console.error('Error analyzing topic:', error)
     return NextResponse.json({ error: `An error occurred while analyzing the topic: ${(error as Error).message}` }, { status: 500 })

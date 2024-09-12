@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ArrowLeftIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/solid'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -11,6 +11,7 @@ type EventInfo = {
   eventName?: string;
   eventDate?: string;
   category: string;
+  summary?: string;
   questions?: string[];
   imagePrompts?: string[];
   generatedImages?: string[];
@@ -24,9 +25,12 @@ type OutputScreenProps = {
 export default function OutputScreen({ eventInfo, setEventInfo }: OutputScreenProps) {
   const [showTopicDetails, setShowTopicDetails] = useState(false)
   const [showQuestions, setShowQuestions] = useState(true)
-  const [showContentOutline, setShowContentOutline] = useState(false)
   const [showImagePrompts, setShowImagePrompts] = useState(false)
   const [showIllustrations, setShowIllustrations] = useState(true)
+
+  useEffect(() => {
+    console.log('EventInfo in OutputScreen:', eventInfo)
+  }, [eventInfo])
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto relative">
@@ -58,13 +62,16 @@ export default function OutputScreen({ eventInfo, setEventInfo }: OutputScreenPr
           </button>
           {showTopicDetails && (
             <div className="mt-2 pl-4 space-y-2">
-              <p>Category: {eventInfo.category}</p>
-              <p>Topic related to an Event: {eventInfo.isEvent ? 'Yes' : 'No'}</p>
+              {eventInfo.summary && (
+                <p><strong>Summary:</strong> {eventInfo.summary}</p>
+              )}
+              <p><strong>Category:</strong> {eventInfo.category || 'Loading...'}</p>
+              <p><strong>Topic related to an Event:</strong> {eventInfo.isEvent ? 'Yes' : 'No'}</p>
               {eventInfo.isEvent && eventInfo.eventTiming && (
-                <p>Event timing: {eventInfo.eventTiming}</p>
+                <p><strong>Event timing:</strong> {eventInfo.eventTiming}</p>
               )}
               {eventInfo.eventDate && (
-                <p>Event date: {eventInfo.eventDate}</p>
+                <p><strong>Event date:</strong> {eventInfo.eventDate}</p>
               )}
             </div>
           )}
@@ -83,35 +90,19 @@ export default function OutputScreen({ eventInfo, setEventInfo }: OutputScreenPr
               <ChevronDownIcon className="h-5 w-5 text-gray-600" />
             )}
           </button>
-          {showQuestions && eventInfo.questions && eventInfo.questions.length > 0 && (
+          {showQuestions && (
             <div className="mt-2 pl-4">
-              <ol className="list-decimal list-inside space-y-2">
-                {eventInfo.questions.map((question, index) => (
-                  <li key={index} className="text-gray-700">
-                    <span className="font-medium">{question}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-        </div>
-
-        {/* Content Outlines Block (Empty for now) */}
-        <div className="mb-4">
-          <button
-            onClick={() => setShowContentOutline(!showContentOutline)}
-            className="flex items-center justify-between w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-          >
-            <span className="font-semibold">📝 Content Outlines</span>
-            {showContentOutline ? (
-              <ChevronUpIcon className="h-5 w-5 text-gray-600" />
-            ) : (
-              <ChevronDownIcon className="h-5 w-5 text-gray-600" />
-            )}
-          </button>
-          {showContentOutline && (
-            <div className="mt-2 pl-4">
-              <p className="text-gray-700 italic">Content outlines will be available soon.</p>
+              {eventInfo.questions && eventInfo.questions.length > 0 ? (
+                <ol className="list-decimal list-inside space-y-2">
+                  {eventInfo.questions.map((question, index) => (
+                    <li key={index} className="text-gray-700">
+                      <span className="font-medium">{question}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-gray-700 italic">Generating questions...</p>
+              )}
             </div>
           )}
         </div>
@@ -129,50 +120,28 @@ export default function OutputScreen({ eventInfo, setEventInfo }: OutputScreenPr
               <ChevronDownIcon className="h-5 w-5 text-gray-600" />
             )}
           </button>
-          {showIllustrations && eventInfo.generatedImages && eventInfo.generatedImages.length > 0 && (
+          {showIllustrations && (
             <div className="mt-2 grid grid-cols-2 gap-4">
-              {eventInfo.generatedImages.map((imageUrl, index) => (
-                <Link 
-                  href={`/image/${index + 1}?src=${encodeURIComponent(imageUrl)}&topic=${encodeURIComponent(eventInfo.eventName || '')}`} 
-                  key={index}
-                >
-                  <div className="relative aspect-video cursor-pointer">
-                    <Image
-                      src={imageUrl}
-                      alt={`Generated illustration ${index + 1}`}
-                      layout="fill"
-                      objectFit="cover"
-                      className="rounded-md"
-                    />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Image Prompts Block */}
-        <div className="mb-4">
-          <button
-            onClick={() => setShowImagePrompts(!showImagePrompts)}
-            className="flex items-center justify-between w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-          >
-            <span className="font-semibold">🎨 Image Prompts for Illustration</span>
-            {showImagePrompts ? (
-              <ChevronUpIcon className="h-5 w-5 text-gray-600" />
-            ) : (
-              <ChevronDownIcon className="h-5 w-5 text-gray-600" />
-            )}
-          </button>
-          {showImagePrompts && eventInfo.imagePrompts && eventInfo.imagePrompts.length > 0 && (
-            <div className="mt-2 pl-4">
-              <ol className="list-decimal list-inside space-y-2">
-                {eventInfo.imagePrompts.map((prompt, index) => (
-                  <li key={index} className="text-gray-700">
-                    <span className="font-medium">{prompt}</span>
-                  </li>
-                ))}
-              </ol>
+              {eventInfo.generatedImages && eventInfo.generatedImages.length > 0 ? (
+                eventInfo.generatedImages.map((imageUrl, index) => (
+                  <Link 
+                    href={`/image/${index + 1}?src=${encodeURIComponent(imageUrl)}&topic=${encodeURIComponent(eventInfo.eventName || '')}`} 
+                    key={index}
+                  >
+                    <div className="relative aspect-video cursor-pointer">
+                      <Image
+                        src={imageUrl}
+                        alt={`Generated illustration ${index + 1}`}
+                        layout="fill"
+                        objectFit="cover"
+                        className="rounded-md"
+                      />
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <p className="text-gray-700 italic col-span-2">Generating illustrations...</p>
+              )}
             </div>
           )}
         </div>

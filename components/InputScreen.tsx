@@ -21,16 +21,17 @@ type EventInfo = {
   generatedImages?: string[];
 }
 
-type InputScreenProps = {
-  setEventInfo: (eventInfo: EventInfo) => void
-  onModelInteraction: (interaction: ModelInteraction) => void
+interface InputScreenProps {
+  onSubmit: (data: any) => Promise<void>;
+  loading: boolean;
 }
 
-export default function InputScreen({ setEventInfo, onModelInteraction }: InputScreenProps) {
+const ideaPills = ["JO 2024", "Iphone 16 Launch", "Kamala Harris Trump Debate", "Euro Cup 2024"];
+
+export default function InputScreen({ onSubmit, loading }: InputScreenProps) {
   const [topic, setTopic] = useState('')
   const [audience, setAudience] = useState('Primary school kids')
   const [country, setCountry] = useState('France')
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [buttonState, setButtonState] = useState('idle')
   const [loadingProgress, setLoadingProgress] = useState(0)
@@ -46,7 +47,7 @@ export default function InputScreen({ setEventInfo, onModelInteraction }: InputS
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
-    if (isLoading) {
+    if (loading) {
       interval = setInterval(() => {
         setLoadingProgress((prevProgress) => {
           if (prevProgress >= 100) {
@@ -56,167 +57,32 @@ export default function InputScreen({ setEventInfo, onModelInteraction }: InputS
           return prevProgress + 1;
         });
       }, 250); // 25000ms / 100 steps = 250ms per step
+    } else {
+      setLoadingProgress(0);
+      setButtonState('idle');
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isLoading]);
+  }, [loading]);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
     setError(null)
     setButtonState('analyzing')
-    setLoadingProgress(0)
-
     try {
-      // Call analyze-topic API
-      const analyzeResponse = await fetch('/api/analyze-topic', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ topic, audience, country }),
-      })
-
-      if (!analyzeResponse.ok) {
-        const errorData = await analyzeResponse.json()
-        throw new Error(errorData.error || 'Failed to analyze topic')
-      }
-
-      const analyzeData = await analyzeResponse.json()
-
-      // Create and send Perplexity interaction
-      const perplexityInteraction: ModelInteraction = {
-        timestamp: new Date().toISOString(),
-        modelName: 'Perplexity API',
-        systemPrompt: 'You are an AI assistant that provides detailed information about topics.',
-        userPrompt: `Provide detailed information about the following topic: "${topic}". Consider the audience (${audience}) and country (${country}) in your analysis. Include any relevant dates, historical context, and current significance.`,
-        modelOutput: analyzeData.perplexityInfo
-      }
-      onModelInteraction(perplexityInteraction)
-
-      // Create and send Claude interaction for analysis
-      const claudeInteraction: ModelInteraction = {
-        timestamp: new Date().toISOString(),
-        modelName: 'Claude 3 Sonnet (Analysis)',
-        systemPrompt: 'You are an AI assistant that analyzes topics and determines if they are related to events.',
-        userPrompt: `Analyze the following topic: "${topic}". Consider the audience (${audience}) and country (${country}) in your analysis. Today's date is ${new Date().toISOString().split('T')[0]}. Based on the provided information, determine if the topic is related to an event, and if so, its timing and date.`,
-        modelOutput: analyzeData.claudeOutput
-      }
-      onModelInteraction(claudeInteraction)
-
-      // Parse the claudeOutput as JSON
-      const parsedOutput = JSON.parse(analyzeData.claudeOutput)
-
-      setButtonState('questioning')
-      // Call generate-questions API
-      const questionsResponse = await fetch('/api/generate-questions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          topic,
-          audience,
-          country,
-          isEvent: parsedOutput.isEvent,
-          eventTiming: parsedOutput.eventTiming
-        }),
-      })
-
-      if (!questionsResponse.ok) {
-        const errorData = await questionsResponse.json()
-        throw new Error(errorData.error || 'Failed to generate questions')
-      }
-
-      const questionsData = await questionsResponse.json()
-
-      // Create and send Claude interaction for questions
-      const questionsInteraction: ModelInteraction = {
-        timestamp: new Date().toISOString(),
-        modelName: 'Claude 3 Sonnet (Questions)',
-        systemPrompt: 'You are an AI assistant that generates questions about topics.',
-        userPrompt: `Generate 6 questions about the following topic: "${topic}". 
-          Consider that the audience is ${audience} from ${country}.
-          The topic is ${parsedOutput.isEvent ? '' : 'not'} related to an event, and if it is, it's a ${parsedOutput.eventTiming} event.`,
-        modelOutput: JSON.stringify(questionsData.questions, null, 2)
-      }
-      onModelInteraction(questionsInteraction)
-
-      setButtonState('imagining')
-      // Call generate-image-prompts API
-      const imagePromptsResponse = await fetch('/api/generate-image-prompts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          topic,
-          audience,
-          country,
-          isEvent: parsedOutput.isEvent,
-          eventTiming: parsedOutput.eventTiming,
-          category: parsedOutput.category
-        }),
-      })
-
-      if (!imagePromptsResponse.ok) {
-        const errorData = await imagePromptsResponse.json()
-        throw new Error(errorData.error || 'Failed to generate image prompts')
-      }
-
-      const imagePromptsData = await imagePromptsResponse.json()
-
-      setButtonState('generating')
-      // Call generate-images API
-      const generateImagesResponse = await fetch('/api/generate-images', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imagePrompts: imagePromptsData.imagePrompts
-        }),
-      })
-
-      if (!generateImagesResponse.ok) {
-        const errorData = await generateImagesResponse.json()
-        throw new Error(errorData.error || 'Failed to generate images')
-      }
-
-      const generatedImagesData = await generateImagesResponse.json()
-
-      const imagePromptsInteraction: ModelInteraction = {
-        timestamp: new Date().toISOString(),
-        modelName: 'Claude 3 Sonnet (Image Prompts)',
-        systemPrompt: 'You are an AI assistant that generates image prompts for topics.',
-        userPrompt: `Generate 4 detailed prompts for text-to-image AI models to illustrate the topic: "${topic}" for ${audience} audience in ${country}.`,
-        modelOutput: JSON.stringify(imagePromptsData.imagePrompts, null, 2)
-      }
-      onModelInteraction(imagePromptsInteraction)
-
-      setButtonState('finalizing')
-      setEventInfo({
-        isEvent: parsedOutput.isEvent,
-        eventTiming: parsedOutput.eventTiming,
-        eventName: topic,
-        eventDate: parsedOutput.eventDate,
-        category: parsedOutput.category,
-        questions: questionsData.questions,
-        imagePrompts: imagePromptsData.imagePrompts,
-        generatedImages: generatedImagesData.generatedImages
-      })
+      await onSubmit({ topic, audience, country })
     } catch (error) {
-      console.error('Error processing topic:', error)
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
-      setError(`An error occurred while processing the topic: ${errorMessage}. Please try again.`)
-    } finally {
-      setIsLoading(false)
+      setError('An error occurred while processing your request. Please try again.')
       setButtonState('idle')
-      setLoadingProgress(0)
     }
   }
+
+  // Function to handle pill click
+  const handlePillClick = (idea: string) => {
+    console.log(`Pill clicked: ${idea}`); // User-friendly console log
+    setTopic(idea);
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto">
@@ -236,6 +102,21 @@ export default function InputScreen({ setEventInfo, onModelInteraction }: InputS
             required
           />
         </div>
+
+        {/* Idea pills */}
+        <div className="flex flex-wrap gap-2 mt-2 mb-4">
+          {ideaPills.map((idea, index) => (
+            <button
+              key={index}
+              type="button" // Add this to prevent form submission
+              onClick={() => handlePillClick(idea)}
+              className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200 transition-colors"
+            >
+              {idea}
+            </button>
+          ))}
+        </div>
+
         <div className="mb-4">
           <label htmlFor="audience" className="block text-gray-700 text-sm font-bold mb-2">
             Audience 👥
@@ -270,14 +151,14 @@ export default function InputScreen({ setEventInfo, onModelInteraction }: InputS
           <button
             type="submit"
             className={`relative w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-all duration-300 ease-in-out overflow-hidden ${
-              isLoading ? 'animate-pulse' : ''
+              loading ? 'cursor-not-allowed opacity-75' : ''
             }`}
-            disabled={isLoading}
+            disabled={loading}
           >
             <span className="relative z-10">
               {buttonLabels[buttonState as keyof typeof buttonLabels]}
             </span>
-            {isLoading && (
+            {loading && (
               <div 
                 className="absolute top-0 left-0 h-full bg-indigo-500 transition-all duration-300 ease-in-out"
                 style={{ width: `${loadingProgress}%` }}
