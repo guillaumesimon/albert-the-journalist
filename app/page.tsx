@@ -33,26 +33,18 @@ type PodcastOutline = {
 }
 
 export default function Home() {
-  const [showAdvancedMode, setShowAdvancedMode] = useState(false)
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null)
-  const [modelInteractions, setModelInteractions] = useState<ModelInteraction[]>([])
-  const [loading, setLoading] = useState(false)
   const [podcastOutline, setPodcastOutline] = useState<PodcastOutline | null>(null)
-
-  const toggleAdvancedMode = () => {
-    setShowAdvancedMode(!showAdvancedMode)
-  }
 
   const handleSetEventInfo = (info: EventInfo | null) => {
     setEventInfo(info)
     if (info === null) {
       // Clear model interactions when starting a new analysis
-      setModelInteractions([])
+      // setModelInteractions([])
     }
   }
 
   const handleSubmit = async (data: { topic: string; audience: string; country: string }) => {
-    setLoading(true)
     // Initialize eventInfo with basic data to trigger OutputScreen rendering
     setEventInfo({
       isEvent: false,
@@ -123,13 +115,13 @@ export default function Home() {
       console.error('Error processing request:', error)
       setEventInfo(null) // Reset eventInfo on error
     } finally {
-      setLoading(false)
+      // setLoading(false)
     }
   }
 
   return (
     <div className="flex min-h-screen">
-      <main className={`flex-grow transition-all duration-300 ${showAdvancedMode ? 'mr-1/3' : ''}`}>
+      <main className="flex-grow">
         <div className="p-24">
           <h1 className="text-4xl font-bold mb-2 text-center">
             Albert 🕵️‍♂️
@@ -145,11 +137,6 @@ export default function Home() {
               <InputScreen
                 onSubmit={handleSubmit}
                 loading={loading}
-                onGenerateOutline={async (topic, audience) => {
-                  // Implement the outline generation logic here or call an API
-                  // For now, return an empty outline to satisfy the type
-                  return { title: '', sections: [] };
-                }}
               />
             ) : (
               <OutputScreen
@@ -161,29 +148,6 @@ export default function Home() {
           </div>
         </div>
       </main>
-      {/* Render AdvancedMode component only if showAdvancedMode is true */}
-      {showAdvancedMode && (
-        <AdvancedMode modelInteractions={modelInteractions} isOpen={showAdvancedMode} />
-      )}
-      <button
-        onClick={toggleAdvancedMode}
-        className="fixed top-4 right-4 z-50 w-10 h-10 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        aria-label="Toggle Advanced Mode"
-      >
-        <svg
-          className={`w-6 h-6 transition-transform duration-300 ${showAdvancedMode ? 'rotate-45' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {showAdvancedMode ? (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          )}
-        </svg>
-      </button>
     </div>
   )
 }
