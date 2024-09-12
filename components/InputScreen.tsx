@@ -2,24 +2,9 @@
 
 import { useState, FormEvent, useEffect } from 'react'
 
-type ModelInteraction = {
-  timestamp: string;
-  modelName: string;
-  systemPrompt: string;
-  userPrompt: string;
-  modelOutput: string;
-}
-
-type EventInfo = {
-  isEvent: boolean;
-  eventTiming?: string;
-  eventName?: string;
-  eventDate?: string;
-  category: string;
-  questions?: string[];
-  imagePrompts?: string[];
-  generatedImages?: string[];
-}
+// Remove unused type definitions
+// type ModelInteraction = { ... }
+// type EventInfo = { ... }
 
 type PodcastOutline = {
   title: string;
@@ -30,7 +15,7 @@ type PodcastOutline = {
 }
 
 interface InputScreenProps {
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: { topic: string; audience: string; country: string }) => Promise<void>;
   loading: boolean;
   onGenerateOutline: (topic: string, audience: string) => Promise<PodcastOutline>;
 }

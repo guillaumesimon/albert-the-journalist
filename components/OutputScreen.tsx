@@ -34,7 +34,6 @@ type OutputScreenProps = {
 export default function OutputScreen({ eventInfo, setEventInfo, podcastOutline }: OutputScreenProps) {
   const [showTopicDetails, setShowTopicDetails] = useState(false)
   const [showQuestions, setShowQuestions] = useState(true)
-  const [showImagePrompts, setShowImagePrompts] = useState(false)
   const [showIllustrations, setShowIllustrations] = useState(true)
   const [showPodcastOutline, setShowPodcastOutline] = useState(true)
 

@@ -43,10 +43,6 @@ export default function Home() {
     setShowAdvancedMode(!showAdvancedMode)
   }
 
-  const handleModelInteraction = (interaction: ModelInteraction) => {
-    setModelInteractions(prevInteractions => [...prevInteractions, interaction])
-  }
-
   const handleSetEventInfo = (info: EventInfo | null) => {
     setEventInfo(info)
     if (info === null) {
@@ -55,7 +51,7 @@ export default function Home() {
     }
   }
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: { topic: string; audience: string; country: string }) => {
     setLoading(true)
     // Initialize eventInfo with basic data to trigger OutputScreen rendering
     setEventInfo({
@@ -149,6 +145,11 @@ export default function Home() {
               <InputScreen
                 onSubmit={handleSubmit}
                 loading={loading}
+                onGenerateOutline={async (topic, audience) => {
+                  // Implement the outline generation logic here or call an API
+                  // For now, return an empty outline to satisfy the type
+                  return { title: '', sections: [] };
+                }}
               />
             ) : (
               <OutputScreen
