@@ -21,14 +21,23 @@ type EventInfo = {
   generatedImages?: string[];
 }
 
+type PodcastOutline = {
+  title: string;
+  sections: {
+    title: string;
+    content: string[];
+  }[];
+}
+
 interface InputScreenProps {
   onSubmit: (data: any) => Promise<void>;
   loading: boolean;
+  onGenerateOutline: (topic: string, audience: string) => Promise<PodcastOutline>;
 }
 
 const ideaPills = ["JO 2024", "Iphone 16 Launch", "Kamala Harris Trump Debate", "Euro Cup 2024"];
 
-export default function InputScreen({ onSubmit, loading }: InputScreenProps) {
+export default function InputScreen({ onSubmit, loading, onGenerateOutline }: InputScreenProps) {
   const [topic, setTopic] = useState('')
   const [audience, setAudience] = useState('Primary school kids')
   const [country, setCountry] = useState('France')

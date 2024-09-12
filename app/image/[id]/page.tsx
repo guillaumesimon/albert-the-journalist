@@ -68,16 +68,13 @@ export default function ImagePage({ params, searchParams }: { params: { id: stri
           />
         </div>
 
-        <div className="flex justify-center space-x-4">
+        <div className="flex justify-center">
           <button 
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors"
             onClick={handleRemoveBackground}
             disabled={isLoading}
           >
             {isLoading ? 'Removing Background...' : 'Remove Background'}
-          </button>
-          <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors">
-            Change Background
           </button>
         </div>
       </div>

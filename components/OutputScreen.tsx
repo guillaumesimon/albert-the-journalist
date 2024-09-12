@@ -17,16 +17,26 @@ type EventInfo = {
   generatedImages?: string[];
 }
 
+type PodcastOutline = {
+  title: string;
+  sections: {
+    title: string;
+    content: string[];
+  }[];
+}
+
 type OutputScreenProps = {
   eventInfo: EventInfo;
   setEventInfo: (eventInfo: null) => void;
+  podcastOutline: PodcastOutline | null;
 }
 
-export default function OutputScreen({ eventInfo, setEventInfo }: OutputScreenProps) {
+export default function OutputScreen({ eventInfo, setEventInfo, podcastOutline }: OutputScreenProps) {
   const [showTopicDetails, setShowTopicDetails] = useState(false)
   const [showQuestions, setShowQuestions] = useState(true)
   const [showImagePrompts, setShowImagePrompts] = useState(false)
   const [showIllustrations, setShowIllustrations] = useState(true)
+  const [showPodcastOutline, setShowPodcastOutline] = useState(true)
 
   useEffect(() => {
     console.log('EventInfo in OutputScreen:', eventInfo)
@@ -141,6 +151,42 @@ export default function OutputScreen({ eventInfo, setEventInfo }: OutputScreenPr
                 ))
               ) : (
                 <p className="text-gray-700 italic col-span-2">Generating illustrations...</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Podcast Outline Block */}
+        <div className="mb-4">
+          <button
+            onClick={() => setShowPodcastOutline(!showPodcastOutline)}
+            className="flex items-center justify-between w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+          >
+            <span className="font-semibold">📝 Podcast Outline</span>
+            {showPodcastOutline ? (
+              <ChevronUpIcon className="h-5 w-5 text-gray-600" />
+            ) : (
+              <ChevronDownIcon className="h-5 w-5 text-gray-600" />
+            )}
+          </button>
+          {showPodcastOutline && (
+            <div className="mt-2 pl-4">
+              {podcastOutline ? (
+                <>
+                  <h4 className="text-lg font-semibold mb-2">{podcastOutline.title}</h4>
+                  {podcastOutline.sections.map((section, index) => (
+                    <div key={index} className="mb-4">
+                      <h5 className="font-medium">{section.title}</h5>
+                      <ul className="list-disc list-inside">
+                        {section.content.map((item, itemIndex) => (
+                          <li key={itemIndex}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <p className="text-gray-700 italic">Generating podcast outline...</p>
               )}
             </div>
           )}

@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import InputScreen from '@/components/InputScreen'
 import OutputScreen from '@/components/OutputScreen'
-import AdvancedMode from '@/components/AdvancedMode'
 
 type ModelInteraction = {
   timestamp: string;
@@ -25,11 +24,20 @@ type EventInfo = {
   generatedImages?: string[];
 }
 
+type PodcastOutline = {
+  title: string;
+  sections: {
+    title: string;
+    content: string[];
+  }[];
+}
+
 export default function Home() {
   const [showAdvancedMode, setShowAdvancedMode] = useState(false)
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null)
   const [modelInteractions, setModelInteractions] = useState<ModelInteraction[]>([])
   const [loading, setLoading] = useState(false)
+  const [podcastOutline, setPodcastOutline] = useState<PodcastOutline | null>(null)
 
   const toggleAdvancedMode = () => {
     setShowAdvancedMode(!showAdvancedMode)
@@ -104,6 +112,17 @@ export default function Home() {
       console.log('Images generated:', imagesData)
       setEventInfo(prevInfo => prevInfo ? { ...prevInfo, generatedImages: imagesData.generatedImages } : null)
 
+      // After generating images, automatically generate the podcast outline
+      console.log('Generating podcast outline...')
+      const outlineResponse = await fetch('/api/generate-outline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: data.topic, audience: data.audience }),
+      })
+      const outlineData = await outlineResponse.json()
+      console.log('Podcast outline generated:', outlineData)
+      setPodcastOutline(outlineData.podcastOutline)
+
     } catch (error) {
       console.error('Error processing request:', error)
       setEventInfo(null) // Reset eventInfo on error
@@ -135,12 +154,16 @@ export default function Home() {
               <OutputScreen
                 eventInfo={eventInfo}
                 setEventInfo={handleSetEventInfo}
+                podcastOutline={podcastOutline}
               />
             )}
           </div>
         </div>
       </main>
-      <AdvancedMode modelInteractions={modelInteractions} isOpen={showAdvancedMode} />
+      {/* Render AdvancedMode component only if showAdvancedMode is true */}
+      {showAdvancedMode && (
+        <AdvancedMode modelInteractions={modelInteractions} isOpen={showAdvancedMode} />
+      )}
       <button
         onClick={toggleAdvancedMode}
         className="fixed top-4 right-4 z-50 w-10 h-10 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
